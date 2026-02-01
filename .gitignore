@@ -1,0 +1,13 @@
+# build outputs
+mycompiler
+*.o
+*.out
+*.exe
+*.dSYM
+build/
+
+# macOS junk
+.DS_Store
+
+# editor settings (optional)
+.vscode/
