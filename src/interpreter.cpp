@@ -37,12 +37,24 @@ long long Interpreter::evalExpr(const Expr* e) {
         return it->second;
     }
 
+    if (auto u = dynamic_cast<const UnaryExpr*>(e)) {
+        long long inner = evalExpr(u->expr.get());
+        if (u->op == '-') return -inner;
+        throw std::runtime_error("Runtime error: unknown unary operator");
+    }
+
     if (auto b = dynamic_cast<const BinaryExpr*>(e)) {
         long long L = evalExpr(b->left.get());
         long long R = evalExpr(b->right.get());
 
-        if (b->op == '+') return L + R;
-        if (b->op == '*') return L * R;
+        switch (b->op) {
+            case '+': return L + R;
+            case '-': return L - R;
+            case '*': return L * R;
+            case '/':
+                if (R == 0) throw std::runtime_error("Runtime error: division by zero");
+                return L / R; // integer division
+        }
 
         throw std::runtime_error("Runtime error: unknown binary operator");
     }

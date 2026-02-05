@@ -28,7 +28,7 @@ Program Parser::parseProgram() {
 
 std::unique_ptr<Stmt> Parser::parseStmt() {
     if (cur.type == TokType::KW_PRINT) {
-        advance(); // consume 'print'
+        advance();
         auto value = parseExpr();
         expect(TokType::SEMI, "';'");
         return std::make_unique<PrintStmt>(std::move(value));
@@ -36,7 +36,7 @@ std::unique_ptr<Stmt> Parser::parseStmt() {
 
     if (cur.type == TokType::IDENT) {
         std::string name = cur.lexeme;
-        advance(); // consume identifier
+        advance();
         expect(TokType::EQUAL, "'='");
         auto value = parseExpr();
         expect(TokType::SEMI, "';'");
@@ -48,22 +48,35 @@ std::unique_ptr<Stmt> Parser::parseStmt() {
 
 std::unique_ptr<Expr> Parser::parseExpr() {
     auto left = parseTerm();
-    while (cur.type == TokType::PLUS) {
-        advance(); // consume '+'
+    while (cur.type == TokType::PLUS || cur.type == TokType::MINUS) {
+        TokType opTok = cur.type;
+        advance();
         auto right = parseTerm();
-        left = std::make_unique<BinaryExpr>('+', std::move(left), std::move(right));
+        char op = (opTok == TokType::PLUS) ? '+' : '-';
+        left = std::make_unique<BinaryExpr>(op, std::move(left), std::move(right));
     }
     return left;
 }
 
 std::unique_ptr<Expr> Parser::parseTerm() {
-    auto left = parseFactor();
-    while (cur.type == TokType::STAR) {
-        advance(); // consume '*'
-        auto right = parseFactor();
-        left = std::make_unique<BinaryExpr>('*', std::move(left), std::move(right));
+    auto left = parseUnary();
+    while (cur.type == TokType::STAR || cur.type == TokType::SLASH) {
+        TokType opTok = cur.type;
+        advance();
+        auto right = parseUnary();
+        char op = (opTok == TokType::STAR) ? '*' : '/';
+        left = std::make_unique<BinaryExpr>(op, std::move(left), std::move(right));
     }
     return left;
+}
+
+std::unique_ptr<Expr> Parser::parseUnary() {
+    if (cur.type == TokType::MINUS) {
+        advance();
+        auto inner = parseUnary();
+        return std::make_unique<UnaryExpr>('-', std::move(inner));
+    }
+    return parseFactor();
 }
 
 std::unique_ptr<Expr> Parser::parseFactor() {
@@ -80,7 +93,7 @@ std::unique_ptr<Expr> Parser::parseFactor() {
     }
 
     if (cur.type == TokType::LPAREN) {
-        advance(); // consume '('
+        advance();
         auto e = parseExpr();
         expect(TokType::RPAREN, "')'");
         return e;

@@ -5,8 +5,7 @@
 #include <iostream>
 #include <string>
 
-// -------------------- Pretty-print AST --------------------
-
+// AST pretty printer (just for sanity)
 static void printExpr(const Expr* e) {
     if (auto n = dynamic_cast<const NumberExpr*>(e)) {
         std::cout << n->value;
@@ -14,6 +13,12 @@ static void printExpr(const Expr* e) {
     }
     if (auto v = dynamic_cast<const VarExpr*>(e)) {
         std::cout << v->name;
+        return;
+    }
+    if (auto u = dynamic_cast<const UnaryExpr*>(e)) {
+        std::cout << "(" << u->op;
+        printExpr(u->expr.get());
+        std::cout << ")";
         return;
     }
     if (auto b = dynamic_cast<const BinaryExpr*>(e)) {
@@ -24,7 +29,7 @@ static void printExpr(const Expr* e) {
         std::cout << ")";
         return;
     }
-    std::cout << "<unknown-expr>";
+    std::cout << "<expr?>";
 }
 
 static void printStmt(const Stmt* s) {
@@ -40,22 +45,15 @@ static void printStmt(const Stmt* s) {
         std::cout << ";\n";
         return;
     }
-    std::cout << "<unknown-stmt>\n";
+    std::cout << "<stmt?>\n";
 }
 
 static void printProgramAST(const Program& prog) {
-    for (const auto& st : prog.stmts) {
-        printStmt(st.get());
-    }
+    for (const auto& st : prog.stmts) printStmt(st.get());
 }
 
-// -------------------- Lexer test --------------------
-
 static void testLexer(const std::string& program) {
-    std::cout << "====================\n";
-    std::cout << "1) LEXER OUTPUT\n";
-    std::cout << "====================\n";
-
+    std::cout << "=== TOKENS ===\n";
     Lexer lex(program);
     while (true) {
         Token t = lex.next();
@@ -73,61 +71,37 @@ static void testLexer(const std::string& program) {
     std::cout << "\n";
 }
 
-// -------------------- Parser test --------------------
-
-static Program testParser(const std::string& program) {
-    std::cout << "====================\n";
-    std::cout << "2) PARSER OUTPUT (AST pretty-print)\n";
-    std::cout << "====================\n";
-
-    Parser parser(program);
-    Program ast = parser.parseProgram();
-
-    printProgramAST(ast);
-    std::cout << "\n";
-
-    return ast; // returned by value; Program holds unique_ptrs safely
-}
-
-// -------------------- Interpreter test --------------------
-
-static void testInterpreter(const Program& ast) {
-    std::cout << "====================\n";
-    std::cout << "3) INTERPRETER OUTPUT (program run)\n";
-    std::cout << "====================\n";
-
-    Interpreter interp;
-    interp.run(ast);
-
-    std::cout << "\n";
-}
-
-// -------------------- Main --------------------
-
 int main() {
-    // This program exercises:
-    // - assignment
-    // - variable references
-    // - precedence (* before +)
-    // - parentheses
-    // - print
     std::string program =
-        "x = 2 + 3;\n"
-        "y = x * 4 + 1;\n"
-        "print y;\n"
-        "print (2 + 3) * 4;\n"
-        "z = (1 + 2) * (3 + 4);\n"
-        "print z;\n";
+        "print 10 - 3;\n"          // 7
+        "print 10 - 3 - 2;\n"      // (10-3)-2 = 5 (left-associative)
+        "print 20 / 5;\n"          // 4
+        "print 7 / 2;\n"           // 3 (integer division)
+        "print 2 + 3 * 4;\n"       // 14
+        "print (2 + 3) * 4;\n"     // 20
+        "print 8 / 2 * 3;\n"       // (8/2)*3 = 12
+        "print 8 / (2 * 3);\n"     // 8/6 = 1
+        "x = 5;\n"
+        "print x - 12;\n"          // -7
+        "print -x;\n"              // -5
+        "print -(2 + 3) * 4;\n"    // -20
+        "print -(-7);\n";          // 7
 
-    std::cout << "SOURCE PROGRAM:\n";
-    std::cout << "--------------------\n";
-    std::cout << program;
-    std::cout << "--------------------\n\n";
+    std::cout << "SOURCE:\n" << program << "\n";
 
     try {
         testLexer(program);
-        Program ast = testParser(program);
-        testInterpreter(ast);
+
+        Parser parser(program);
+        Program ast = parser.parseProgram();
+
+        std::cout << "=== AST (pretty) ===\n";
+        printProgramAST(ast);
+        std::cout << "\n";
+
+        std::cout << "=== RUN ===\n";
+        Interpreter interp;
+        interp.run(ast);
     } catch (const std::exception& e) {
         std::cerr << e.what() << "\n";
         return 1;

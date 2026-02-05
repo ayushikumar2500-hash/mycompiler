@@ -18,8 +18,16 @@ struct VarExpr : Expr {
     explicit VarExpr(std::string n) : name(std::move(n)) {}
 };
 
+struct UnaryExpr : Expr {
+    char op; // only '-' for now
+    std::unique_ptr<Expr> expr;
+
+    UnaryExpr(char o, std::unique_ptr<Expr> e)
+        : op(o), expr(std::move(e)) {}
+};
+
 struct BinaryExpr : Expr {
-    char op; // '+' or '*'
+    char op; // '+', '-', '*', '/'
     std::unique_ptr<Expr> left;
     std::unique_ptr<Expr> right;
 

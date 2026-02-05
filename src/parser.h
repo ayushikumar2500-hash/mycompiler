@@ -7,7 +7,6 @@
 class Parser {
 public:
     explicit Parser(std::string source);
-
     Program parseProgram();
 
 private:
@@ -18,15 +17,16 @@ private:
     [[noreturn]] void error(const std::string& msg) const;
     void expect(TokType t, const std::string& what);
 
-    // Grammar:
     // program  := stmt* END
     // stmt     := IDENT '=' expr ';' | 'print' expr ';'
-    // expr     := term ( '+' term )*
-    // term     := factor ( '*' factor )*
+    // expr     := term ( ('+'|'-') term )*
+    // term     := unary ( ('*'|'/') unary )*
+    // unary    := '-' unary | factor
     // factor   := NUMBER | IDENT | '(' expr ')'
 
     std::unique_ptr<Stmt> parseStmt();
     std::unique_ptr<Expr> parseExpr();
     std::unique_ptr<Expr> parseTerm();
+    std::unique_ptr<Expr> parseUnary();
     std::unique_ptr<Expr> parseFactor();
 };

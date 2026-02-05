@@ -13,12 +13,17 @@ std::string tokTypeToString(TokType t) {
         case TokType::IDENT:    return "IDENT";
         case TokType::NUMBER:   return "NUMBER";
         case TokType::KW_PRINT: return "KW_PRINT";
+
         case TokType::PLUS:     return "PLUS";
+        case TokType::MINUS:    return "MINUS";
         case TokType::STAR:     return "STAR";
+        case TokType::SLASH:    return "SLASH";
+
         case TokType::EQUAL:    return "EQUAL";
         case TokType::LPAREN:   return "LPAREN";
         case TokType::RPAREN:   return "RPAREN";
         case TokType::SEMI:     return "SEMI";
+
         case TokType::END:      return "END";
     }
     return "UNKNOWN";
@@ -54,14 +59,17 @@ Token Lexer::next() {
     char c = src[i];
 
     // Single-character tokens
-    if (c == '+') { i++; return Token{TokType::PLUS, "+"}; }
-    if (c == '*') { i++; return Token{TokType::STAR, "*"}; }
-    if (c == '=') { i++; return Token{TokType::EQUAL, "="}; }
+    if (c == '+') { i++; return Token{TokType::PLUS,  "+"}; }
+    if (c == '-') { i++; return Token{TokType::MINUS, "-"}; }
+    if (c == '*') { i++; return Token{TokType::STAR,  "*"}; }
+    if (c == '/') { i++; return Token{TokType::SLASH, "/"}; }
+
+    if (c == '=') { i++; return Token{TokType::EQUAL,  "="}; }
     if (c == '(') { i++; return Token{TokType::LPAREN, "("}; }
     if (c == ')') { i++; return Token{TokType::RPAREN, ")"}; }
-    if (c == ';') { i++; return Token{TokType::SEMI, ";"}; }
+    if (c == ';') { i++; return Token{TokType::SEMI,   ";"}; }
 
-    // Number literal: [0-9]+
+    // Number: [0-9]+
     {
         unsigned char uc = static_cast<unsigned char>(c);
         if (std::isdigit(uc)) {
@@ -77,7 +85,7 @@ Token Lexer::next() {
         }
     }
 
-    // Identifier / keyword: [A-Za-z_][A-Za-z0-9_]*
+    // Identifier / keyword
     if (isIdentStart(c)) {
         size_t start = i;
         i++;
@@ -87,6 +95,5 @@ Token Lexer::next() {
         return Token{TokType::IDENT, lex};
     }
 
-    // Anything else is an error
     throw lexError(string("unexpected character '") + c + "'");
 }

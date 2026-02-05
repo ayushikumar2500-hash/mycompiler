@@ -7,7 +7,10 @@ enum class TokType {
     KW_PRINT,
 
     PLUS,
+    MINUS,
     STAR,
+    SLASH,
+
     EQUAL,
     LPAREN,
     RPAREN,
@@ -18,8 +21,8 @@ enum class TokType {
 
 struct Token {
     TokType type;
-    std::string lexeme;   // original text like "x", "123", "+", etc.
-    long long number = 0; // only used if type == NUMBER
+    std::string lexeme;
+    long long number = 0;
 };
 
 std::string tokTypeToString(TokType t);
@@ -27,8 +30,7 @@ std::string tokTypeToString(TokType t);
 class Lexer {
 public:
     explicit Lexer(std::string source);
-
-    Token next(); // get next token
+    Token next();
 
 private:
     std::string src;
