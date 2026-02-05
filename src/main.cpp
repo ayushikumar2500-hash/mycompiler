@@ -1,7 +1,11 @@
 #include "lexer.h"
 #include "parser.h"
+#include "interpreter.h"
 
 #include <iostream>
+#include <string>
+
+// -------------------- Pretty-print AST --------------------
 
 static void printExpr(const Expr* e) {
     if (auto n = dynamic_cast<const NumberExpr*>(e)) {
@@ -39,16 +43,20 @@ static void printStmt(const Stmt* s) {
     std::cout << "<unknown-stmt>\n";
 }
 
-int main() {
-    std::string program =
-        "x = 2 + 3;\n"
-        "y = x * 4 + 1;\n"
-        "print y;\n"
-        "print (2 + 3) * 4;\n";
+static void printProgramAST(const Program& prog) {
+    for (const auto& st : prog.stmts) {
+        printStmt(st.get());
+    }
+}
 
+// -------------------- Lexer test --------------------
+
+static void testLexer(const std::string& program) {
+    std::cout << "====================\n";
+    std::cout << "1) LEXER OUTPUT\n";
+    std::cout << "====================\n";
 
     Lexer lex(program);
-
     while (true) {
         Token t = lex.next();
         std::cout << tokTypeToString(t.type);
@@ -60,18 +68,66 @@ int main() {
         }
 
         std::cout << "\n";
-
         if (t.type == TokType::END) break;
     }
+    std::cout << "\n";
+}
+
+// -------------------- Parser test --------------------
+
+static Program testParser(const std::string& program) {
+    std::cout << "====================\n";
+    std::cout << "2) PARSER OUTPUT (AST pretty-print)\n";
+    std::cout << "====================\n";
+
+    Parser parser(program);
+    Program ast = parser.parseProgram();
+
+    printProgramAST(ast);
+    std::cout << "\n";
+
+    return ast; // returned by value; Program holds unique_ptrs safely
+}
+
+// -------------------- Interpreter test --------------------
+
+static void testInterpreter(const Program& ast) {
+    std::cout << "====================\n";
+    std::cout << "3) INTERPRETER OUTPUT (program run)\n";
+    std::cout << "====================\n";
+
+    Interpreter interp;
+    interp.run(ast);
+
+    std::cout << "\n";
+}
+
+// -------------------- Main --------------------
+
+int main() {
+    // This program exercises:
+    // - assignment
+    // - variable references
+    // - precedence (* before +)
+    // - parentheses
+    // - print
+    std::string program =
+        "x = 2 + 3;\n"
+        "y = x * 4 + 1;\n"
+        "print y;\n"
+        "print (2 + 3) * 4;\n"
+        "z = (1 + 2) * (3 + 4);\n"
+        "print z;\n";
+
+    std::cout << "SOURCE PROGRAM:\n";
+    std::cout << "--------------------\n";
+    std::cout << program;
+    std::cout << "--------------------\n\n";
 
     try {
-        Parser parser(program);
-        Program ast = parser.parseProgram();
-
-        std::cout << "Parsed program (AST pretty print):\n";
-        for (const auto& st : ast.stmts) {
-            printStmt(st.get());
-        }
+        testLexer(program);
+        Program ast = testParser(program);
+        testInterpreter(ast);
     } catch (const std::exception& e) {
         std::cerr << e.what() << "\n";
         return 1;
